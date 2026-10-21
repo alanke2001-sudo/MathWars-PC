@@ -1090,7 +1090,11 @@
           openDrawerTab.classList.add('hidden');
         }
       }
-      setTimeout(resizeCanvas, 60);
+      // 確保版面切換後立即重繪畫布，杜絕畫面壓扁或錯位
+      requestAnimationFrame(() => {
+        resizeCanvas();
+        setTimeout(resizeCanvas, 80);
+      });
     }
 
     // 存檔與數學輔助
