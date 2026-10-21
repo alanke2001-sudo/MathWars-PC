@@ -2,11 +2,11 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>超腦防線：算術神射手 (Math Shooter: Mind Blaster)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Orbitron & Inter -->
+  <!-- Google Fonts: Orbitron, Chakra Petch & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;600;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
@@ -14,7 +14,9 @@
   <style>
     * {
       user-select: none;
+      -webkit-user-select: none;
       box-sizing: border-box;
+      touch-action: manipulation;
     }
     body {
       font-family: 'Inter', sans-serif;
@@ -63,66 +65,95 @@
       filter: sepia(0.6) hue-rotate(180deg) saturate(1.8);
       transition: filter 0.25s ease;
     }
-    .drawer-collapsed {
-      transform: translateX(-100%);
+
+    /* 📱 手機直式模式 (S24 風格專用九宮格與自適應) */
+    .mobile-mode #desktop-keypad {
+      display: none !important;
+    }
+    .mobile-mode #mobile-keypad {
+      display: grid !important;
+    }
+    .mobile-mode footer {
+      margin-bottom: 0.75rem !important;
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.75rem !important;
+    }
+    .mobile-mode #left-settings-drawer {
+      display: none;
+    }
+    .mobile-mode #open-drawer-tab {
+      display: flex !important;
+    }
+
+    /* 💻 平板 / 電腦模式 (維持原版橫向開闊) */
+    body:not(.mobile-mode) #mobile-keypad {
+      display: none !important;
+    }
+    body:not(.mobile-mode) #desktop-keypad {
+      display: flex !important;
     }
   </style>
 </head>
 <body id="game-body" class="w-full h-full flex flex-col justify-between items-center text-slate-100 cyber-grid overflow-hidden relative">
 
-  <!-- 頂部 HUD (電腦寬螢幕專用) -->
-  <header class="w-full max-w-6xl shrink-0 px-6 py-2 flex items-center justify-between z-20 bg-slate-900/90 backdrop-blur-md rounded-b-2xl border-b border-x border-cyan-500/30 shadow-2xl">
+  <!-- 頂部 HUD (狀態、波次、貨幣與系統選單) -->
+  <header class="w-full max-w-6xl shrink-0 px-3 sm:px-6 py-2 flex items-center justify-between z-20 bg-slate-900/90 backdrop-blur-md rounded-b-2xl border-b border-x border-cyan-500/30 shadow-2xl">
     <!-- 護盾血條與波次 -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2 sm:gap-4">
       <div class="flex flex-col">
-        <div class="flex justify-between items-center text-xs font-hud text-cyan-300 mb-1">
-          <span>SHIELD INTEGRITY</span>
+        <div class="flex justify-between items-center text-[10px] sm:text-xs font-hud text-cyan-300 mb-0.5 sm:mb-1">
+          <span>SHIELD</span>
           <span id="hp-text">100/100</span>
         </div>
-        <div class="w-48 h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-cyan-500/40">
+        <div class="w-28 sm:w-48 h-2.5 sm:h-3.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-cyan-500/40">
           <div id="hp-bar" class="h-full bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 rounded-full transition-all duration-300 w-full"></div>
         </div>
       </div>
 
-      <div class="flex flex-col items-center bg-slate-950/80 px-3 py-1 rounded-lg border border-cyan-500/40">
-        <span class="text-[9px] text-slate-400 font-hud">CURRENT WAVE</span>
-        <span id="wave-display" class="font-hud text-lg font-black text-cyan-300">01</span>
+      <div class="flex flex-col items-center bg-slate-950/80 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg border border-cyan-500/40">
+        <span class="text-[8px] sm:text-[9px] text-slate-400 font-hud">WAVE</span>
+        <span id="wave-display" class="font-hud text-xs sm:text-lg font-black text-cyan-300">01</span>
       </div>
 
-      <div id="shield-badge" class="hidden items-center gap-1 bg-blue-950/90 border border-blue-500/50 px-2 py-1 rounded-lg text-xs font-hud text-blue-300">
+      <div id="shield-badge" class="hidden items-center gap-1 bg-blue-950/90 border border-blue-500/50 px-2 py-0.5 rounded-lg text-xs font-hud text-blue-300">
         🛡️ <span id="shield-count">0</span>
       </div>
     </div>
 
     <!-- 貨幣與系統選單按鈕 -->
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-amber-500/40">
-        <span class="text-sm">🪙</span>
-        <span id="gold-display" class="font-hud text-amber-300 font-bold text-sm">0</span>
+    <div class="flex items-center gap-1.5 sm:gap-3">
+      <div class="flex items-center gap-1 bg-slate-950/80 px-1.5 sm:px-3 py-1 rounded-lg border border-amber-500/40">
+        <span class="text-xs sm:text-sm">🪙</span>
+        <span id="gold-display" class="font-hud text-amber-300 font-bold text-xs sm:text-sm">0</span>
       </div>
-      <div class="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-purple-500/40">
-        <span class="text-sm">🧬</span>
-        <span id="synapse-display" class="font-hud text-purple-300 font-bold text-sm">0</span>
+      <div class="flex items-center gap-1 bg-slate-950/80 px-1.5 sm:px-3 py-1 rounded-lg border border-purple-500/40">
+        <span class="text-xs sm:text-sm">🧬</span>
+        <span id="synapse-display" class="font-hud text-purple-300 font-bold text-xs sm:text-sm">0</span>
       </div>
 
+      <!-- 全螢幕切換按鈕 -->
+      <button id="fullscreen-toggle-btn" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-cyan-500/40 rounded-lg text-xs flex items-center gap-1 transition" title="全螢幕切換">
+        <span id="fullscreen-icon">⛶</span> <span class="font-hud hidden md:inline text-[11px]">全螢幕</span>
+      </button>
+
       <!-- BGM 開關 -->
-      <button id="bgm-toggle-btn" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-cyan-500/40 rounded-lg text-xs flex items-center gap-1 transition">
-        <span id="bgm-icon">🎵</span> <span class="font-hud hidden md:inline">BGM</span>
+      <button id="bgm-toggle-btn" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-cyan-500/40 rounded-lg text-xs flex items-center gap-1 transition">
+        <span id="bgm-icon">🎵</span> <span class="font-hud hidden md:inline text-[11px]">BGM</span>
       </button>
 
       <!-- 科技樹 -->
-      <button id="open-tech-btn" class="px-3 py-1.5 bg-purple-900/80 hover:bg-purple-800 active:scale-95 border border-purple-400 rounded-lg text-xs font-hud font-bold text-purple-200 flex items-center gap-1 transition glow-purple">
-        🧬 <span>科技樹</span>
+      <button id="open-tech-btn" class="px-2 sm:px-3 py-1 bg-purple-900/80 hover:bg-purple-800 active:scale-95 border border-purple-400 rounded-lg text-xs font-hud font-bold text-purple-200 flex items-center gap-1 transition glow-purple">
+        🧬 <span class="hidden sm:inline">科技樹</span>
       </button>
 
       <!-- 軍火庫 -->
-      <button id="open-shop-btn" class="px-3 py-1.5 bg-cyan-700 hover:bg-cyan-600 active:scale-95 border border-cyan-300 rounded-lg text-xs font-hud font-bold text-white flex items-center gap-1 transition glow-cyan">
-        🛒 <span>軍火庫</span>
+      <button id="open-shop-btn" class="px-2 sm:px-3 py-1 bg-cyan-700 hover:bg-cyan-600 active:scale-95 border border-cyan-300 rounded-lg text-xs font-hud font-bold text-white flex items-center gap-1 transition glow-cyan">
+        🛒 <span class="hidden sm:inline">軍火庫</span>
       </button>
     </div>
   </header>
 
-  <!-- 戰場畫布主區域 (電腦寬比例視野，加設 min-h-0 避免擠壓底部) -->
+  <!-- 戰場畫布主區域 -->
   <main class="relative flex-1 min-h-0 w-full max-w-6xl my-1 flex items-center justify-center overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-950/60 shadow-inner">
     <canvas id="gameCanvas" class="w-full h-full block"></canvas>
 
@@ -133,20 +164,20 @@
     </div>
 
     <!-- 左側難度/題型抽屜標籤 -->
-    <div id="drawer-container" class="absolute left-0 top-4 z-30 flex items-start">
-      <div id="left-settings-drawer" class="transition-transform duration-200 bg-slate-900/95 backdrop-blur-md p-3 rounded-r-xl border border-l-0 border-cyan-500/50 shadow-2xl flex flex-col gap-2 min-w-[170px]">
-        <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+    <div id="drawer-container" class="absolute left-0 top-3 z-30 flex items-start">
+      <div id="left-settings-drawer" class="transition-transform duration-200 bg-slate-900/95 backdrop-blur-md p-2.5 sm:p-3 rounded-r-xl border border-l-0 border-cyan-500/50 shadow-2xl flex flex-col gap-2 min-w-[150px] sm:min-w-[160px]">
+        <div class="flex items-center justify-between pb-1 border-b border-slate-800">
           <span class="text-xs font-hud text-cyan-300 font-bold">題型練習範疇</span>
           <button id="close-drawer-x" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
         </div>
-        <div class="grid grid-cols-2 gap-1.5">
-          <button id="op-btn-add" class="px-2 py-1.5 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="+">➕ 加法</button>
-          <button id="op-btn-sub" class="px-2 py-1.5 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="-">➖ 減法</button>
-          <button id="op-btn-mul" class="px-2 py-1.5 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="*">✖️ 乘法</button>
-          <button id="op-btn-div" class="px-2 py-1.5 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="/">➗ 除法</button>
+        <div class="grid grid-cols-2 gap-1">
+          <button id="op-btn-add" class="px-2 py-1 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="+">➕ 加法</button>
+          <button id="op-btn-sub" class="px-2 py-1 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="-">➖ 減法</button>
+          <button id="op-btn-mul" class="px-2 py-1 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="*">✖️ 乘法</button>
+          <button id="op-btn-div" class="px-2 py-1 rounded text-xs font-bold font-math transition bg-cyan-600 text-white border border-cyan-400" data-op="/">➗ 除法</button>
         </div>
         <span id="op-warning-msg" class="text-[10px] text-amber-300 text-center hidden font-math">至少保留 1 種運算</span>
-        <button id="adult-mode-btn" class="w-full py-1.5 rounded-lg text-xs font-bold font-hud transition flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
+        <button id="adult-mode-btn" class="w-full py-1 rounded-lg text-xs font-bold font-hud transition flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
           <span>🔥</span> <span id="adult-mode-text">大人模式 (關)</span>
         </button>
       </div>
@@ -157,103 +188,130 @@
     </div>
 
     <!-- 右側戰術技能欄 (附帶鍵盤熱鍵標籤) -->
-    <div class="absolute right-4 top-4 flex flex-col gap-2.5 z-10">
-      <button id="skill-bullet-time-btn" class="w-14 h-14 bg-slate-900/90 hover:bg-slate-800 border border-indigo-500/80 rounded-2xl flex flex-col items-center justify-center text-indigo-200 active:scale-90 shadow-lg transition">
-        <span class="text-lg leading-none">⏳</span>
-        <span class="text-[10px] font-hud mt-0.5">凝滯</span>
-        <span class="text-[8px] text-indigo-400 font-mono">[SPACE]</span>
+    <div class="absolute right-3 top-3 flex flex-col gap-2 z-10">
+      <button id="skill-bullet-time-btn" class="w-11 h-11 sm:w-14 sm:h-14 bg-slate-900/90 hover:bg-slate-800 border border-indigo-500/80 rounded-2xl flex flex-col items-center justify-center text-indigo-200 active:scale-90 shadow-lg transition">
+        <span class="text-base sm:text-lg leading-none">⏳</span>
+        <span class="text-[9px] sm:text-[10px] font-hud mt-0.5">凝滯</span>
+        <span class="text-[8px] text-indigo-400 font-mono hidden sm:inline">[SPACE]</span>
       </button>
-      <button id="skill-emp-btn" class="w-14 h-14 bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/80 rounded-2xl flex flex-col items-center justify-center text-cyan-200 active:scale-90 shadow-lg transition">
-        <span class="text-lg leading-none">⚡</span>
-        <span class="text-[10px] font-hud mt-0.5">EMP</span>
-        <span class="text-[8px] text-cyan-400 font-mono">[E 鍵]</span>
+      <button id="skill-emp-btn" class="w-11 h-11 sm:w-14 sm:h-14 bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/80 rounded-2xl flex flex-col items-center justify-center text-cyan-200 active:scale-90 shadow-lg transition">
+        <span class="text-base sm:text-lg leading-none">⚡</span>
+        <span class="text-[9px] sm:text-[10px] font-hud mt-0.5">EMP</span>
+        <span class="text-[8px] text-cyan-400 font-mono hidden sm:inline">[E 鍵]</span>
       </button>
     </div>
 
     <!-- 連擊 Combo 提示 -->
     <div id="combo-container" class="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-200 opacity-0 scale-90 flex flex-col items-center z-10">
-      <span id="combo-count" class="font-hud font-black text-3xl text-amber-400 text-glow-magenta leading-none">5x</span>
-      <span class="font-hud text-xs tracking-widest text-pink-300 uppercase">MENTAL COMBO</span>
+      <span id="combo-count" class="font-hud font-black text-2xl sm:text-3xl text-amber-400 text-glow-magenta leading-none">5x</span>
+      <span class="font-hud text-[10px] sm:text-xs tracking-widest text-pink-300 uppercase">MENTAL COMBO</span>
     </div>
 
     <!-- 獲得的晶片徽章 (左下角) -->
-    <div id="active-relics-bar" class="absolute bottom-3 left-4 flex gap-1.5 z-10 pointer-events-none"></div>
+    <div id="active-relics-bar" class="absolute bottom-2 left-3 flex gap-1.5 z-10 pointer-events-none"></div>
   </main>
 
-  <!-- 電腦版底部終端機 (往上提昇距底邊 20px，避免 Windows 工具列/瀏覽器狀態列遮擋) -->
-  <footer class="w-full max-w-6xl shrink-0 bg-slate-900/95 backdrop-blur-xl border border-cyan-500/40 rounded-2xl px-5 py-2.5 mb-4 sm:mb-6 z-30 flex flex-col gap-2 shadow-[0_10px_35px_rgba(0,0,0,0.9),0_0_20px_rgba(6,182,212,0.15)]">
-    <!-- 上排：武器切換列與鍵盤提示 -->
-    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
-      <div class="flex items-center gap-2">
-        <span class="text-xs font-hud text-slate-400">裝備武器：</span>
-        <div id="quick-weapon-bar" class="flex items-center gap-2 overflow-x-auto"></div>
+  <!-- 底部終端機 (自適應雙版面配置) -->
+  <footer class="w-full max-w-6xl shrink-0 bg-slate-900/95 backdrop-blur-xl border border-cyan-500/40 rounded-2xl px-3 sm:px-5 py-2 mb-8 sm:mb-12 z-30 flex flex-col gap-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.9),0_0_20px_rgba(6,182,212,0.15)] transition-all">
+    <!-- 上排：武器切換列與語音聲控/鍵盤提示 -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+      <div class="flex items-center gap-2 overflow-hidden">
+        <span class="text-[11px] font-hud text-slate-400 shrink-0">裝備：</span>
+        <div id="quick-weapon-bar" class="flex items-center gap-1.5 overflow-x-auto py-0.5"></div>
       </div>
-      <div class="text-[11px] font-hud text-slate-400 hidden sm:flex items-center gap-3">
-        <span>💡 支援鍵盤數字鍵、[Enter] 發射、[Backspace] 刪除</span>
+      <div class="text-[11px] font-hud text-slate-400 hidden lg:flex items-center gap-3 shrink-0">
+        <span>💡 支援實體數字鍵、[Enter] 發射、[Backspace] 刪除</span>
       </div>
     </div>
 
-    <!-- 下排：算式看板與寬版輸入按鍵 -->
-    <div class="flex flex-col lg:flex-row items-center justify-between gap-3 w-full">
-      <!-- 算式題目展示 (強烈對比螢光高亮) -->
-      <div class="flex items-center gap-3 bg-slate-950/90 px-4 py-2 rounded-xl border-2 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.25)] w-full lg:w-auto flex-1 justify-between">
+    <!-- 中排：算式題目展示區塊 -->
+    <div class="flex items-center justify-between gap-2.5 w-full">
+      <div class="flex items-center gap-2.5 bg-slate-950/90 px-3 py-1.5 rounded-xl border-2 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.25)] w-full flex-1 justify-between">
         <div class="flex items-center gap-2">
-          <div id="current-weapon-indicator" class="w-3.5 h-3.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></div>
-          <span id="current-weapon-name" class="font-hud text-xs text-cyan-300 font-bold hidden sm:inline">標準腦波槍</span>
+          <div id="current-weapon-indicator" class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></div>
+          <span id="current-weapon-name" class="font-hud text-[11px] sm:text-xs text-cyan-300 font-bold hidden sm:inline">標準腦波槍</span>
         </div>
-        <div id="question-text" class="font-math font-black text-2xl sm:text-3xl tracking-wider text-white text-glow-cyan text-center">
+        <div id="question-text" class="font-math font-black text-xl sm:text-3xl tracking-wider text-white text-glow-cyan text-center">
           12 + 8 = ?
         </div>
-        <div class="flex items-center gap-1.5">
-          <span class="text-xs font-hud text-slate-400">輸入:</span>
-          <div id="input-display" class="font-math font-black text-2xl sm:text-3xl text-amber-300 min-w-[65px] text-right bg-slate-900 px-3 py-0.5 rounded-lg border border-amber-500/60 shadow-inner">
-            _
+        
+        <div class="flex items-center gap-2">
+          <!-- 🎙️ 語音聲控作答開關按鈕 -->
+          <button id="voice-input-btn" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-emerald-500/50 rounded-lg text-emerald-300 font-hud text-[11px] font-bold flex items-center gap-1 transition" title="點擊啟用語音辨識直接說答案">
+            <span id="voice-icon">🎙️</span>
+            <span id="voice-text" class="hidden sm:inline">語音答題</span>
+          </button>
+
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] sm:text-xs font-hud text-slate-400">輸入:</span>
+            <div id="input-display" class="font-math font-black text-lg sm:text-2xl text-amber-300 min-w-[50px] sm:min-w-[55px] text-right bg-slate-900 px-2 sm:px-2.5 py-0.5 rounded-lg border border-amber-500/60 shadow-inner">
+              _
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- 橫排數字鍵 (高對比度、好點擊) -->
-      <div class="flex items-center gap-1.5 flex-wrap sm:flex-nowrap justify-center shrink-0">
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="1">1</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="2">2</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="3">3</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="4">4</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="5">5</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="6">6</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="7">7</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="8">8</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="9">9</button>
-        <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-lg w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="0">0</button>
-        <button type="button" id="backspace-btn" class="keypad-btn bg-rose-950 hover:bg-rose-800 active:bg-rose-700 text-rose-300 font-hud font-bold text-xs sm:text-sm px-2.5 sm:px-3 h-9 sm:h-10 rounded-xl border border-rose-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95">⌫ 刪除</button>
-        <button type="button" id="fire-action-btn" class="keypad-btn bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:brightness-90 text-slate-950 font-hud font-black text-xs sm:text-sm px-3.5 sm:px-4 h-9 sm:h-10 rounded-xl border border-cyan-300 shadow glow-cyan flex items-center justify-center cursor-pointer select-none active:scale-95">發射 ↵</button>
-      </div>
+    <!-- 💻 1. 平板 / 電腦版橫排鍵盤 (Desktop Keypad) -->
+    <div id="desktop-keypad" class="flex items-center gap-1 sm:gap-1.5 flex-wrap sm:flex-nowrap justify-center shrink-0">
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="1">1</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="2">2</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="3">3</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="4">4</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="5">5</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="6">6</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="7">7</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="8">8</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="9">9</button>
+      <button type="button" class="keypad-btn bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 text-cyan-100 font-math font-black text-base sm:text-lg w-8 h-8 sm:w-10 sm:h-9 rounded-xl border border-slate-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95" data-val="0">0</button>
+      <button type="button" id="backspace-btn" class="keypad-btn bg-rose-950 hover:bg-rose-800 active:bg-rose-700 text-rose-300 font-hud font-bold text-xs sm:text-sm px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl border border-rose-700 shadow transition cursor-pointer select-none flex items-center justify-center active:scale-95">⌫ 刪除</button>
+      <button type="button" id="fire-action-btn" class="keypad-btn bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:brightness-90 text-slate-950 font-hud font-black text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 rounded-xl border border-cyan-300 shadow glow-cyan flex items-center justify-center cursor-pointer select-none active:scale-95">發射 ↵</button>
+    </div>
+
+    <!-- 📱 2. 手機直式版 4x3 計算機九宮格大鍵盤 (Mobile Keypad) -->
+    <div id="mobile-keypad" class="grid grid-cols-3 gap-1.5 w-full max-w-sm mx-auto pt-1">
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="1">1</button>
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="2">2</button>
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="3">3</button>
+      
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="4">4</button>
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="5">5</button>
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="6">6</button>
+      
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="7">7</button>
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="8">8</button>
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="9">9</button>
+      
+      <button type="button" id="mobile-backspace-btn" class="keypad-btn bg-rose-950 active:bg-rose-800 text-rose-300 font-hud font-bold text-base py-2.5 rounded-xl border border-rose-700 shadow flex items-center justify-center">⌫ 刪除</button>
+      <button type="button" class="keypad-btn bg-slate-800 active:bg-cyan-600 text-cyan-100 font-math font-black text-xl py-2.5 rounded-xl border border-slate-700 shadow flex items-center justify-center" data-val="0">0</button>
+      <button type="button" id="mobile-fire-btn" class="keypad-btn bg-gradient-to-r from-cyan-500 to-blue-600 active:brightness-90 text-slate-950 font-hud font-black text-base py-2.5 rounded-xl border border-cyan-300 shadow glow-cyan flex items-center justify-center">發射 ↵</button>
     </div>
   </footer>
 
   <!-- 彈窗：Roguelike 3選1 晶片 -->
   <div id="reward-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border-2 border-cyan-400/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative glow-cyan flex flex-col items-center">
+    <div class="bg-slate-900 border-2 border-cyan-400/80 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative glow-cyan flex flex-col items-center">
       <div class="text-cyan-400 font-hud text-xs tracking-widest uppercase mb-1">⚡ NEURAL SYNCHRONIZATION ⚡</div>
-      <h2 class="text-2xl font-hud font-black text-white text-glow-cyan mb-2 text-center">波次通關！選擇思維晶片</h2>
-      <p class="text-xs text-slate-400 text-center mb-5">大腦進化超頻，選擇一項本局專屬被動晶片：</p>
-      <div id="relic-cards-container" class="flex flex-col gap-3 w-full mb-2"></div>
+      <h2 class="text-xl sm:text-2xl font-hud font-black text-white text-glow-cyan mb-1.5 text-center">波次通關！選擇思維晶片</h2>
+      <p class="text-xs text-slate-400 text-center mb-4">大腦超頻進化，選擇一項本局專屬被動晶片：</p>
+      <div id="relic-cards-container" class="flex flex-col gap-2.5 w-full mb-1"></div>
     </div>
   </div>
 
   <!-- 彈窗：科技樹 -->
   <div id="tech-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-purple-500/80 rounded-2xl max-w-md w-full p-5 shadow-2xl relative glow-purple flex flex-col max-h-[85vh]">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-        <h2 class="text-lg font-hud font-black text-purple-300 flex items-center gap-2">
+      <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+        <h2 class="text-base sm:text-lg font-hud font-black text-purple-300 flex items-center gap-2">
           <span>🧬</span> 永久神經網絡科技樹
         </h2>
         <button id="close-tech-btn" class="text-slate-400 hover:text-white p-1 text-xl">✕</button>
       </div>
       <div class="py-2 flex items-center justify-between bg-slate-950/70 px-4 rounded-xl mt-3 border border-purple-500/30">
         <span class="text-xs text-slate-300">儲備突觸點數：</span>
-        <span class="font-hud text-base font-black text-purple-300">🧬 <span id="tree-synapse-val">0</span></span>
+        <span class="font-hud text-sm sm:text-base font-black text-purple-300">🧬 <span id="tree-synapse-val">0</span></span>
       </div>
-      <div id="tech-tree-list" class="space-y-2.5 my-4 overflow-y-auto pr-1 flex-1"></div>
+      <div id="tech-tree-list" class="space-y-2.5 my-3 overflow-y-auto pr-1 flex-1"></div>
       <button id="tech-done-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-hud font-bold py-2.5 rounded-xl text-xs transition">完成設定</button>
     </div>
   </div>
@@ -261,47 +319,53 @@
   <!-- 彈窗：軍火庫 -->
   <div id="shop-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-cyan-400/80 rounded-2xl max-w-lg w-full p-5 shadow-2xl relative glow-cyan flex flex-col max-h-[85vh]">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-        <h2 class="text-lg font-hud font-black text-cyan-300 flex items-center gap-2">
+      <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+        <h2 class="text-base sm:text-lg font-hud font-black text-cyan-300 flex items-center gap-2">
           <span>🛒</span> 心靈軍火補給站
         </h2>
         <button id="close-shop-btn" class="text-slate-400 hover:text-white p-1 text-xl">✕</button>
       </div>
       <div class="py-2 flex items-center justify-between bg-slate-950/70 px-4 rounded-xl mt-3 border border-amber-500/30">
         <span class="text-xs text-slate-300">可用心靈幣：</span>
-        <span class="font-hud text-base font-black text-amber-300">🪙 <span id="shop-gold-val">0</span></span>
+        <span class="font-hud text-sm sm:text-base font-black text-amber-300">🪙 <span id="shop-gold-val">0</span></span>
       </div>
-      <div id="weapons-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 my-4 overflow-y-auto pr-1 flex-1"></div>
+      <div id="weapons-list" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 my-3 overflow-y-auto pr-1 flex-1"></div>
       <button id="resume-btn" class="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-hud font-black py-2.5 rounded-xl text-xs glow-cyan transition">返回戰場</button>
     </div>
   </div>
 
-  <!-- 遊戲開始 / 結束覆蓋畫面 -->
-  <div id="overlay-screen" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-40 flex items-center justify-center p-6">
-    <div class="max-w-md w-full bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 text-center glow-cyan relative">
-      <div class="w-16 h-16 mx-auto mb-4 bg-cyan-950 rounded-2xl flex items-center justify-center border border-cyan-400 glow-cyan">
+  <!-- 遊戲開始 / 結束覆蓋畫面 (含雙版面啟動按鈕) -->
+  <div id="overlay-screen" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-40 flex items-center justify-center p-4 sm:p-6">
+    <div class="max-w-md w-full bg-slate-900 border border-cyan-500/40 rounded-2xl p-5 sm:p-6 text-center glow-cyan relative">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 bg-cyan-950 rounded-2xl flex items-center justify-center border border-cyan-400 glow-cyan">
         <span class="text-3xl">🧠</span>
       </div>
-      <h1 id="overlay-title" class="font-hud font-black text-2xl text-cyan-300 tracking-wider mb-2">超腦防線：算術神射手</h1>
-      <p id="overlay-desc" class="text-slate-300 text-xs mb-5 leading-relaxed">
-        電腦專用版！使用鍵盤數字鍵快速計算題目並按 Enter 發射，消滅上方逼近的怪物軍團！
+      <h1 id="overlay-title" class="font-hud font-black text-xl sm:text-2xl text-cyan-300 tracking-wider mb-2">超腦防線：算術神射手</h1>
+      <p id="overlay-desc" class="text-slate-300 text-xs mb-4 leading-relaxed">
+        心算射擊守衛戰！算題輸入數字發射砲火，亦可點擊🎙️語音直接念出答案擊潰怪獸！請選擇適合裝置的版面開始：
       </p>
 
-      <div id="game-over-stats" class="hidden mb-5 bg-slate-950 p-4 rounded-xl border border-slate-800 text-left space-y-2 font-hud text-xs">
+      <div id="game-over-stats" class="hidden mb-4 bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-left space-y-1.5 font-hud text-xs">
         <div class="flex justify-between text-slate-400">最終分數：<span id="stat-score" class="text-cyan-400 font-bold">0</span></div>
         <div class="flex justify-between text-slate-400">抵禦波次：<span id="stat-wave" class="text-amber-400 font-bold">1</span></div>
         <div class="flex justify-between text-slate-400">殲敵數量：<span id="stat-kills" class="text-emerald-400 font-bold">0</span></div>
         <div class="flex justify-between text-slate-400">心算正確率：<span id="stat-acc" class="text-pink-400 font-bold">100%</span></div>
       </div>
 
-      <button id="start-game-btn" class="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 hover:brightness-110 active:brightness-95 text-slate-950 font-hud font-black text-base py-3.5 rounded-xl transition shadow glow-cyan">
-        啟動腦波發射器 (START)
-      </button>
+      <!-- 雙模式選擇啟動按鈕群 -->
+      <div class="flex flex-col gap-2.5 w-full">
+        <button id="start-mobile-btn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 active:brightness-95 text-slate-950 font-hud font-black text-sm sm:text-base py-3 rounded-xl transition shadow flex items-center justify-center gap-2 border border-emerald-300">
+          <span>📱</span> <span>手機直式版 (S24 九宮格)</span>
+        </button>
+        <button id="start-desktop-btn" class="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 hover:brightness-110 active:brightness-95 text-slate-950 font-hud font-black text-sm sm:text-base py-3 rounded-xl transition shadow glow-cyan flex items-center justify-center gap-2 border border-cyan-300">
+          <span>💻</span> <span>平板 / 電腦版 (橫向旗艦版)</span>
+        </button>
+      </div>
     </div>
   </div>
 
   <script>
-    // 音效合成器
+    // 柔和音量音效合成器 (Web Audio API)
     class SoundSynth {
       constructor() {
         this.ctx = null;
@@ -336,8 +400,8 @@
           osc.type = 'sawtooth';
           osc.frequency.setValueAtTime(freq, now);
           osc.frequency.exponentialRampToValueAtTime(80, now + duration);
-          gain.gain.setValueAtTime(0.098, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + duration);
+          gain.gain.setValueAtTime(0.068, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + duration);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -354,8 +418,8 @@
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(250 + Math.random() * 200, now);
             osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
-            gain.gain.setValueAtTime(0.12, now);
-            gain.gain.linearRampToValueAtTime(0.005, now + 0.2);
+            gain.gain.setValueAtTime(0.084, now);
+            gain.gain.linearRampToValueAtTime(0.003, now + 0.2);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start(now);
@@ -372,8 +436,8 @@
           osc.type = 'square';
           osc.frequency.setValueAtTime(110, now);
           osc.frequency.exponentialRampToValueAtTime(20, now + 0.3);
-          gain.gain.setValueAtTime(0.17, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.3);
+          gain.gain.setValueAtTime(0.119, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.3);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -389,8 +453,8 @@
           osc.type = 'sine';
           osc.frequency.setValueAtTime(1200, now);
           osc.frequency.exponentialRampToValueAtTime(150, now + 0.25);
-          gain.gain.setValueAtTime(0.147, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.25);
+          gain.gain.setValueAtTime(0.103, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.25);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -407,8 +471,8 @@
           osc.frequency.setValueAtTime(523.25, now);
           osc.frequency.setValueAtTime(659.25, now + 0.08);
           osc.frequency.setValueAtTime(783.99, now + 0.16);
-          gain.gain.setValueAtTime(0.088, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.22);
+          gain.gain.setValueAtTime(0.062, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.22);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -424,8 +488,8 @@
           osc.type = 'sawtooth';
           osc.frequency.setValueAtTime(140, now);
           osc.frequency.setValueAtTime(95, now + 0.1);
-          gain.gain.setValueAtTime(0.098, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.18);
+          gain.gain.setValueAtTime(0.068, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.18);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -441,8 +505,8 @@
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(440, now);
           osc.frequency.setValueAtTime(880, now + 0.08);
-          gain.gain.setValueAtTime(0.098, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.18);
+          gain.gain.setValueAtTime(0.068, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.18);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -459,8 +523,8 @@
           osc.frequency.setValueAtTime(320, now);
           osc.frequency.linearRampToValueAtTime(640, now + 0.35);
           osc.frequency.linearRampToValueAtTime(320, now + 0.7);
-          gain.gain.setValueAtTime(0.147, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.7);
+          gain.gain.setValueAtTime(0.103, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.7);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -476,8 +540,8 @@
           osc.type = 'sine';
           osc.frequency.setValueAtTime(800, now);
           osc.frequency.exponentialRampToValueAtTime(60, now + 0.5);
-          gain.gain.setValueAtTime(0.196, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.5);
+          gain.gain.setValueAtTime(0.137, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.5);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -493,8 +557,8 @@
           osc.type = 'sine';
           osc.frequency.setValueAtTime(300, now);
           osc.frequency.exponentialRampToValueAtTime(100, now + 0.45);
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.45);
+          gain.gain.setValueAtTime(0.084, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.45);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -511,8 +575,8 @@
           osc.frequency.setValueAtTime(880, now);
           osc.frequency.linearRampToValueAtTime(1320, now + 0.04);
           osc.frequency.linearRampToValueAtTime(440, now + 0.12);
-          gain.gain.setValueAtTime(0.108, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.12);
+          gain.gain.setValueAtTime(0.075, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.12);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -528,8 +592,8 @@
           osc.type = 'square';
           osc.frequency.setValueAtTime(220, now);
           osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-          gain.gain.setValueAtTime(0.088, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.15);
+          gain.gain.setValueAtTime(0.062, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.15);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -545,8 +609,8 @@
           osc.type = 'sine';
           osc.frequency.setValueAtTime(1400, now);
           osc.frequency.linearRampToValueAtTime(900, now + 0.2);
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.2);
+          gain.gain.setValueAtTime(0.084, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.2);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -563,8 +627,8 @@
           osc.frequency.setValueAtTime(90, now);
           osc.frequency.linearRampToValueAtTime(260, now + 0.3);
           osc.frequency.exponentialRampToValueAtTime(45, now + 0.6);
-          gain.gain.setValueAtTime(0.17, now);
-          gain.gain.linearRampToValueAtTime(0.005, now + 0.6);
+          gain.gain.setValueAtTime(0.119, now);
+          gain.gain.linearRampToValueAtTime(0.003, now + 0.6);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
@@ -573,7 +637,7 @@
       }
     }
 
-    /* 多軌次世代 Arcade 街機戰鬥音樂生成器 */
+    // 多軌次世代 Arcade 街機戰鬥音樂生成器
     class BGMManager {
       constructor(synth) {
         this.synth = synth;
@@ -655,7 +719,7 @@
           const kickGain = ctx.createGain();
           kickOsc.frequency.setValueAtTime(this.isIntense ? 160 : 135, t);
           kickOsc.frequency.exponentialRampToValueAtTime(32, t + 0.12);
-          kickGain.gain.setValueAtTime(0.22, t);
+          kickGain.gain.setValueAtTime(0.18, t);
           kickGain.gain.linearRampToValueAtTime(0.001, t + 0.13);
           kickOsc.connect(kickGain);
           kickGain.connect(ctx.destination);
@@ -678,25 +742,13 @@
           noiseFilter.frequency.value = 1000;
 
           const snareGain = ctx.createGain();
-          snareGain.gain.setValueAtTime(0.16, t);
+          snareGain.gain.setValueAtTime(0.13, t);
           snareGain.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
 
           noise.connect(noiseFilter);
           noiseFilter.connect(snareGain);
           snareGain.connect(ctx.destination);
           noise.start(t);
-
-          const snareTone = ctx.createOscillator();
-          const snareToneGain = ctx.createGain();
-          snareTone.type = 'triangle';
-          snareTone.frequency.setValueAtTime(210, t);
-          snareTone.frequency.exponentialRampToValueAtTime(80, t + 0.08);
-          snareToneGain.gain.setValueAtTime(0.11, t);
-          snareToneGain.gain.linearRampToValueAtTime(0.001, t + 0.08);
-          snareTone.connect(snareToneGain);
-          snareToneGain.connect(ctx.destination);
-          snareTone.start(t);
-          snareTone.stop(t + 0.08);
         }
 
         // 3. Hi-Hat
@@ -705,7 +757,7 @@
           const hihatGain = ctx.createGain();
           hihatOsc.type = 'square';
           hihatOsc.frequency.setValueAtTime(10000 + Math.random() * 2000, t);
-          const hihatVol = (s % 4 === 2) ? 0.05 : 0.025;
+          const hihatVol = (s % 4 === 2) ? 0.04 : 0.02;
           hihatGain.gain.setValueAtTime(hihatVol, t);
           hihatGain.gain.linearRampToValueAtTime(0.0001, t + 0.035);
           hihatOsc.connect(hihatGain);
@@ -728,7 +780,7 @@
           bassFilter.frequency.setValueAtTime(this.isIntense ? 1100 : 700, t);
           bassFilter.frequency.exponentialRampToValueAtTime(250, t + 0.12);
 
-          bassGain.gain.setValueAtTime(0.13, t);
+          bassGain.gain.setValueAtTime(0.11, t);
           bassGain.gain.linearRampToValueAtTime(0.001, t + 0.12);
 
           bassOsc.connect(bassFilter);
@@ -752,7 +804,7 @@
           leadFilter.frequency.setValueAtTime(1400, t);
           leadFilter.Q.value = 1.8;
 
-          leadGain.gain.setValueAtTime(0.07, t);
+          leadGain.gain.setValueAtTime(0.055, t);
           leadGain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
 
           leadOsc.connect(leadFilter);
@@ -771,7 +823,7 @@
             padOsc.frequency.setValueAtTime(pFreq, t);
 
             padGain.gain.setValueAtTime(0.001, t);
-            padGain.gain.linearRampToValueAtTime(0.03, t + 0.15);
+            padGain.gain.linearRampToValueAtTime(0.025, t + 0.15);
             padGain.gain.linearRampToValueAtTime(0.001, t + 0.85);
 
             padOsc.connect(padGain);
@@ -785,6 +837,97 @@
 
     const sound = new SoundSynth();
     const bgm = new BGMManager(sound);
+
+    // 語音聲控辨識管理器
+    class VoiceRecognitionManager {
+      constructor() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.supported = !!SpeechRec;
+        this.recognition = this.supported ? new SpeechRec() : null;
+        this.isEnabled = false;
+
+        if (this.recognition) {
+          this.recognition.lang = 'zh-TW';
+          this.recognition.continuous = true;
+          this.recognition.interimResults = false;
+
+          this.recognition.onresult = (e) => {
+            const last = e.results.length - 1;
+            const transcript = e.results[last][0].transcript.trim();
+            this.handleVoiceInput(transcript);
+          };
+
+          this.recognition.onerror = () => {};
+          this.recognition.onend = () => {
+            if (this.isEnabled && gameState.isRunning && !gameState.isPaused) {
+              try { this.recognition.start(); } catch(err) {}
+            }
+          };
+        }
+      }
+
+      toggle() {
+        if (!this.supported) {
+          addFloatingText('⚠️ 瀏覽器未支援語音', canvas.width / 2, canvas.height - 80, '#f43f5e', 14);
+          return false;
+        }
+        this.isEnabled = !this.isEnabled;
+        if (this.isEnabled) {
+          try {
+            this.recognition.start();
+            addFloatingText('🎙️ 語音答題已啟動！請說出答案', canvas.width / 2, canvas.height - 80, '#10b981', 14);
+          } catch(e) {}
+        } else {
+          try {
+            this.recognition.stop();
+            addFloatingText('🎙️ 語音答題已關閉', canvas.width / 2, canvas.height - 80, '#94a3b8', 14);
+          } catch(e) {}
+        }
+        return this.isEnabled;
+      }
+
+      handleVoiceInput(text) {
+        if (!gameState.isRunning || gameState.isPaused) return;
+        const parsedNumber = this.parseSpokenNumber(text);
+        if (parsedNumber !== null) {
+          gameState.currentInput = parsedNumber.toString();
+          updateInputDisplay();
+          addFloatingText(`🎙️「${text}」➔ ${parsedNumber}`, canvas.width / 2, canvas.height - 90, '#22d3ee', 16);
+          submitAnswer();
+        } else {
+          addFloatingText(`❓ 聽到了「${text}」`, canvas.width / 2, canvas.height - 90, '#f59e0b', 14);
+        }
+      }
+
+      parseSpokenNumber(str) {
+        const directNum = str.replace(/[^0-9]/g, '');
+        if (directNum !== '') return parseInt(directNum, 10);
+
+        const cnMap = { '零': 0, '一': 1, '二': 2, '兩': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
+        const clean = str.replace(/[個把幾]/g, '');
+
+        if (clean.length === 1 && cnMap[clean] !== undefined) return cnMap[clean];
+
+        if (clean.includes('十')) {
+          const parts = clean.split('十');
+          const tens = parts[0] === '' ? 1 : (cnMap[parts[0]] || 0);
+          const units = parts[1] === '' ? 0 : (cnMap[parts[1]] || 0);
+          return tens * 10 + units;
+        }
+
+        let total = 0;
+        let matched = false;
+        for (const char of clean) {
+          if (cnMap[char] !== undefined) {
+            total = total * 10 + cnMap[char];
+            matched = true;
+          }
+        }
+        return matched ? total : null;
+      }
+    }
+
+    const voiceManager = new VoiceRecognitionManager();
 
     // 永久科技樹
     const techTree = {
@@ -814,6 +957,17 @@
       cryo: { id: 'cryo', name: '超維冷凍光束', icon: '❄️', desc: '穿透零度光束，貫穿所有怪物並強力緩速 65%！', damage: 75, pellets: 1, spread: 0, aoe: 0, penetrate: true, price: 440, owned: false, color: '#38bdf8', laserFreq: 880 },
       vortex: { id: 'vortex', name: '質子黑洞重力砲', icon: '🌀', desc: '召喚持續 3.5 秒的奇點力場，牽引並碾壓撕裂怪物！', damage: 10, pellets: 1, spread: 0, aoe: 140, penetrate: false, price: 650, owned: false, color: '#c084fc', laserFreq: 220 }
     };
+
+    // 怪物種類定義（體積縮小 20%、速度減慢 40%，最適合兒童舒適心算）
+    const ENEMY_TYPES = [
+      { type: 'stickman', name: '疾行竹竿人', color: '#38bdf8', size: 6.5, baseHp: 20, speed: 0.54, gold: 15, score: 60 },
+      { type: 'oldman', name: '頑固老頭怪', color: '#94a3b8', size: 13, baseHp: 260, speed: 0.105, gold: 40, score: 140 },
+      { type: 'virus', name: '突變病毒', color: '#ec4899', size: 9, baseHp: 45, speed: 0.26, gold: 12, score: 50 },
+      { type: 'bug', name: '電路爬蟲', color: '#10b981', size: 7.5, baseHp: 30, speed: 0.37, gold: 10, score: 40 },
+      { type: 'brute', name: '重裝代碼巨獸', color: '#f59e0b', size: 13.5, baseHp: 150, speed: 0.15, gold: 35, score: 120 },
+      { type: 'jelly', name: '算式干擾水母', color: '#818cf8', size: 10.5, baseHp: 75, speed: 0.20, gold: 25, score: 85 },
+      { type: 'mitosis', name: '細胞分裂原蟲', color: '#2dd4bf', size: 11, baseHp: 90, speed: 0.21, gold: 30, score: 95 }
+    ];
 
     const gameState = {
       isRunning: false,
@@ -853,6 +1007,93 @@
       screenShakeTime: 0
     };
 
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gameBody = document.getElementById('game-body');
+
+    const hpBar = document.getElementById('hp-bar');
+    const hpText = document.getElementById('hp-text');
+    const waveDisplay = document.getElementById('wave-display');
+    const goldDisplay = document.getElementById('gold-display');
+    const synapseDisplay = document.getElementById('synapse-display');
+    const questionText = document.getElementById('question-text');
+    const inputDisplay = document.getElementById('input-display');
+    const currentWeaponName = document.getElementById('current-weapon-name');
+    const currentWeaponIndicator = document.getElementById('current-weapon-indicator');
+    const quickWeaponBar = document.getElementById('quick-weapon-bar');
+    const comboContainer = document.getElementById('combo-container');
+    const comboCount = document.getElementById('combo-count');
+    const bossAlertBanner = document.getElementById('boss-alert-banner');
+    const shieldBadge = document.getElementById('shield-badge');
+    const shieldCount = document.getElementById('shield-count');
+    const activeRelicsBar = document.getElementById('active-relics-bar');
+
+    const bgmToggleBtn = document.getElementById('bgm-toggle-btn');
+    const bgmIcon = document.getElementById('bgm-icon');
+    const fullscreenToggleBtn = document.getElementById('fullscreen-toggle-btn');
+    const fullscreenIcon = document.getElementById('fullscreen-icon');
+    const voiceInputBtn = document.getElementById('voice-input-btn');
+    const voiceIcon = document.getElementById('voice-icon');
+    const voiceText = document.getElementById('voice-text');
+
+    const skillBulletTimeBtn = document.getElementById('skill-bullet-time-btn');
+    const skillEmpBtn = document.getElementById('skill-emp-btn');
+
+    const shopModal = document.getElementById('shop-modal');
+    const shopGoldVal = document.getElementById('shop-gold-val');
+    const weaponsList = document.getElementById('weapons-list');
+    const openShopBtn = document.getElementById('open-shop-btn');
+    const closeShopBtn = document.getElementById('close-shop-btn');
+    const resumeBtn = document.getElementById('resume-btn');
+
+    const rewardModal = document.getElementById('reward-modal');
+    const relicCardsContainer = document.getElementById('relic-cards-container');
+
+    const techModal = document.getElementById('tech-modal');
+    const treeSynapseVal = document.getElementById('tree-synapse-val');
+    const techTreeList = document.getElementById('tech-tree-list');
+    const openTechBtn = document.getElementById('open-tech-btn');
+    const closeTechBtn = document.getElementById('close-tech-btn');
+    const techDoneBtn = document.getElementById('tech-done-btn');
+
+    const overlayScreen = document.getElementById('overlay-screen');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayDesc = document.getElementById('overlay-desc');
+    const gameOverStats = document.getElementById('game-over-stats');
+    const startMobileBtn = document.getElementById('start-mobile-btn');
+    const startDesktopBtn = document.getElementById('start-desktop-btn');
+
+    const leftSettingsDrawer = document.getElementById('left-settings-drawer');
+    const closeDrawerX = document.getElementById('close-drawer-x');
+    const openDrawerTab = document.getElementById('open-drawer-tab');
+    const backspaceBtn = document.getElementById('backspace-btn');
+    const fireActionBtn = document.getElementById('fire-action-btn');
+    const mobileBackspaceBtn = document.getElementById('mobile-backspace-btn');
+    const mobileFireBtn = document.getElementById('mobile-fire-btn');
+
+    // 版面模式管理：'desktop' 或 'mobile'
+    let currentLayoutMode = 'desktop';
+
+    function setLayoutMode(mode) {
+      currentLayoutMode = mode;
+      if (mode === 'mobile') {
+        document.body.classList.add('mobile-mode');
+        // 手機版預設收起左側設定抽屜以保全視野
+        if (leftSettingsDrawer && openDrawerTab) {
+          leftSettingsDrawer.classList.add('hidden');
+          openDrawerTab.classList.remove('hidden');
+        }
+      } else {
+        document.body.classList.remove('mobile-mode');
+        if (leftSettingsDrawer && openDrawerTab) {
+          leftSettingsDrawer.classList.remove('hidden');
+          openDrawerTab.classList.add('hidden');
+        }
+      }
+      setTimeout(resizeCanvas, 60);
+    }
+
+    // 存檔與數學輔助
     function loadSavedMeta() {
       try {
         const savedPts = localStorage.getItem('mind_synapse_pts');
@@ -889,48 +1130,16 @@
       return s.length > 1 && s === s.split('').reverse().join('');
     }
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const gameBody = document.getElementById('game-body');
-
-    const hpBar = document.getElementById('hp-bar');
-    const hpText = document.getElementById('hp-text');
-    const waveDisplay = document.getElementById('wave-display');
-    const goldDisplay = document.getElementById('gold-display');
-    const synapseDisplay = document.getElementById('synapse-display');
-    const questionText = document.getElementById('question-text');
-    const inputDisplay = document.getElementById('input-display');
-    const currentWeaponName = document.getElementById('current-weapon-name');
-    const currentWeaponIndicator = document.getElementById('current-weapon-indicator');
-    const quickWeaponBar = document.getElementById('quick-weapon-bar');
-    const comboContainer = document.getElementById('combo-container');
-    const comboCount = document.getElementById('combo-count');
-    const bossAlertBanner = document.getElementById('boss-alert-banner');
-    const shieldBadge = document.getElementById('shield-badge');
-    const shieldCount = document.getElementById('shield-count');
-    const activeRelicsBar = document.getElementById('active-relics-bar');
-
-    const bgmToggleBtn = document.getElementById('bgm-toggle-btn');
-    const bgmIcon = document.getElementById('bgm-icon');
-    const fullscreenToggleBtn = document.getElementById('fullscreen-toggle-btn');
-    const fullscreenIcon = document.getElementById('fullscreen-icon');
-
-    // 全螢幕切換與觸發函式
     function toggleFullscreen() {
       const doc = window.document;
       const docEl = doc.documentElement;
-
       const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
       const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
 
       if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-        if (requestFullScreen) {
-          requestFullScreen.call(docEl).catch(() => {});
-        }
+        if (requestFullScreen) requestFullScreen.call(docEl).catch(() => {});
       } else {
-        if (cancelFullScreen) {
-          cancelFullScreen.call(doc).catch(() => {});
-        }
+        if (cancelFullScreen) cancelFullScreen.call(doc).catch(() => {});
       }
     }
 
@@ -939,9 +1148,7 @@
       const docEl = doc.documentElement;
       const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
       if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-        if (requestFullScreen) {
-          requestFullScreen.call(docEl).catch(() => {});
-        }
+        if (requestFullScreen) requestFullScreen.call(docEl).catch(() => {});
       }
     }
 
@@ -966,37 +1173,19 @@
       });
     }
 
-    const skillBulletTimeBtn = document.getElementById('skill-bullet-time-btn');
-    const skillEmpBtn = document.getElementById('skill-emp-btn');
-
-    const shopModal = document.getElementById('shop-modal');
-    const shopGoldVal = document.getElementById('shop-gold-val');
-    const weaponsList = document.getElementById('weapons-list');
-    const openShopBtn = document.getElementById('open-shop-btn');
-    const closeShopBtn = document.getElementById('close-shop-btn');
-    const resumeBtn = document.getElementById('resume-btn');
-
-    const rewardModal = document.getElementById('reward-modal');
-    const relicCardsContainer = document.getElementById('relic-cards-container');
-
-    const techModal = document.getElementById('tech-modal');
-    const treeSynapseVal = document.getElementById('tree-synapse-val');
-    const techTreeList = document.getElementById('tech-tree-list');
-    const openTechBtn = document.getElementById('open-tech-btn');
-    const closeTechBtn = document.getElementById('close-tech-btn');
-    const techDoneBtn = document.getElementById('tech-done-btn');
-
-    const overlayScreen = document.getElementById('overlay-screen');
-    const overlayTitle = document.getElementById('overlay-title');
-    const overlayDesc = document.getElementById('overlay-desc');
-    const gameOverStats = document.getElementById('game-over-stats');
-    const startGameBtn = document.getElementById('start-game-btn');
-
-    const leftSettingsDrawer = document.getElementById('left-settings-drawer');
-    const closeDrawerX = document.getElementById('close-drawer-x');
-    const openDrawerTab = document.getElementById('open-drawer-tab');
-    const backspaceBtn = document.getElementById('backspace-btn');
-    const fireActionBtn = document.getElementById('fire-action-btn');
+    if (voiceInputBtn) {
+      voiceInputBtn.addEventListener('click', () => {
+        sound.init();
+        const active = voiceManager.toggle();
+        if (active) {
+          voiceInputBtn.className = 'px-2 py-1 bg-emerald-600 active:scale-95 border border-emerald-400 rounded-lg text-white font-hud text-[11px] font-bold flex items-center gap-1 transition shadow-[0_0_10px_#10b981]';
+          voiceIcon.textContent = '🟢';
+        } else {
+          voiceInputBtn.className = 'px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-emerald-500/50 rounded-lg text-emerald-300 font-hud text-[11px] font-bold flex items-center gap-1 transition';
+          voiceIcon.textContent = '🎙️';
+        }
+      });
+    }
 
     if (closeDrawerX && openDrawerTab && leftSettingsDrawer) {
       closeDrawerX.addEventListener('click', () => {
@@ -1009,7 +1198,7 @@
       });
     }
 
-    // 電腦鍵盤原生事件監聽 (數字鍵、數字小鍵盤、Enter、Backspace、Space、E)
+    // 鍵盤原生事件監聽
     window.addEventListener('keydown', (e) => {
       if (!gameState.isRunning || gameState.isPaused) return;
 
@@ -1033,17 +1222,6 @@
       canvas.height = rect.height;
     }
     window.addEventListener('resize', resizeCanvas);
-
-    // 怪物種類定義（已按需求縮小 40% 且速度調整為最適合心算的緩速）
-    const ENEMY_TYPES = [
-      { type: 'stickman', name: '疾行竹竿人', color: '#38bdf8', size: 8, baseHp: 20, speed: 0.90, gold: 15, score: 60 },
-      { type: 'oldman', name: '頑固老頭怪', color: '#94a3b8', size: 16, baseHp: 260, speed: 0.175, gold: 40, score: 140 },
-      { type: 'virus', name: '突變病毒', color: '#ec4899', size: 11, baseHp: 45, speed: 0.43, gold: 12, score: 50 },
-      { type: 'bug', name: '電路爬蟲', color: '#10b981', size: 9, baseHp: 30, speed: 0.62, gold: 10, score: 40 },
-      { type: 'brute', name: '重裝代碼巨獸', color: '#f59e0b', size: 17, baseHp: 150, speed: 0.25, gold: 35, score: 120 },
-      { type: 'jelly', name: '算式干擾水母', color: '#818cf8', size: 13, baseHp: 75, speed: 0.34, gold: 25, score: 85 },
-      { type: 'mitosis', name: '細胞分裂原蟲', color: '#2dd4bf', size: 14, baseHp: 90, speed: 0.35, gold: 30, score: 95 }
-    ];
 
     function generateQuestion() {
       const wave = gameState.wave;
@@ -1150,11 +1328,11 @@
       const template = forceTemplate || candidateTypes[Math.floor(Math.random() * candidateTypes.length)];
       const hpMultiplier = 1 + (gameState.wave - 1) * 0.22;
 
-      // 隨機動態路徑行為類型：0: 蛇形正弦波, 1: 傾斜反彈穿梭, 2: 直指腦波核心導向
+      // 隨機動態路徑：0: 蛇形正弦波, 1: 傾斜反彈穿梭, 2: 導向核心逼近
       const movePattern = Math.floor(Math.random() * 3);
       const waveFreq = 0.02 + Math.random() * 0.035;
-      const waveAmp = 1.0 + Math.random() * 1.8;
-      const initialVx = (Math.random() - 0.5) * 1.4;
+      const waveAmp = 0.8 + Math.random() * 1.5;
+      const initialVx = (Math.random() - 0.5) * 1.2;
 
       gameState.enemies.push({
         x: x,
@@ -1184,10 +1362,10 @@
       bgm.setTension(true);
 
       if (bossAlertBanner) {
-        bossAlertBanner.classList.remove('opacity-0', '-translate-y-4');
+        bossAlertBanner.classList.remove('opacity-0', '-translate-y-6');
         bossAlertBanner.classList.add('opacity-100', 'translate-y-0');
         setTimeout(() => {
-          bossAlertBanner.classList.add('opacity-0', '-translate-y-4');
+          bossAlertBanner.classList.add('opacity-0', '-translate-y-6');
           bossAlertBanner.classList.remove('opacity-100', 'translate-y-0');
         }, 3200);
       }
@@ -1199,10 +1377,10 @@
         type: 'boss',
         name: '極限邏輯神經母體',
         color: '#f43f5e',
-        size: 25,
+        size: 20,
         hp: bossHp,
         maxHp: bossHp,
-        speed: 0.14,
+        speed: 0.084,
         gold: 150,
         score: 600,
         angle: 0,
@@ -1410,9 +1588,7 @@
     }
 
     function handleInputKey(val) {
-      if (!gameState.isRunning && !gameState.isPaused) {
-        startGame();
-      }
+      if (!gameState.isRunning && !gameState.isPaused) startGame();
       if (gameState.currentInput.length < 6) {
         gameState.currentInput += val;
         updateInputDisplay();
@@ -1421,9 +1597,7 @@
     }
 
     function handleBackspace() {
-      if (!gameState.isRunning && !gameState.isPaused) {
-        startGame();
-      }
+      if (!gameState.isRunning && !gameState.isPaused) startGame();
       gameState.currentInput = gameState.currentInput.slice(0, -1);
       updateInputDisplay();
     }
@@ -1589,40 +1763,34 @@
 
         // 隨機且有方向性的運動軌跡
         if (e.isBoss) {
-          // BOSS 寬幅左右巡航並偶爾俯衝突進
           e.x += Math.sin(Date.now() / 600) * 1.6 * speedModifier * adultModifier * enemySlow;
         } else {
           e.swayPhase = (e.swayPhase || 0) + (e.waveFreq || 0.03);
           
           if (e.movePattern === 0) {
-            // 蛇形正弦擺動（S形蜿蜒向下）
-            e.x += Math.sin(e.swayPhase) * (e.waveAmp || 1.2) * speedModifier * adultModifier * enemySlow;
+            e.x += Math.sin(e.swayPhase) * (e.waveAmp || 1.0) * speedModifier * adultModifier * enemySlow;
           } else if (e.movePattern === 1) {
-            // 帶有角度的斜向折射運動（碰到兩側牆壁反彈）
-            e.x += (e.vx || 0.5) * speedModifier * adultModifier * enemySlow;
+            e.x += (e.vx || 0.4) * speedModifier * adultModifier * enemySlow;
             const margin = e.size + 10;
             if (e.x <= margin) {
               e.x = margin;
-              e.vx = Math.abs(e.vx || 0.5);
+              e.vx = Math.abs(e.vx || 0.4);
             } else if (e.x >= canvas.width - margin) {
               e.x = canvas.width - margin;
-              e.vx = -Math.abs(e.vx || 0.5);
+              e.vx = -Math.abs(e.vx || 0.4);
             }
           } else if (e.movePattern === 2) {
-            // 導向型運動：向玩家核心砲台（底層中心）微幅偏轉逼近
             const targetCenterX = canvas.width / 2;
             const dirX = targetCenterX > e.x ? 1 : -1;
-            const wander = Math.cos(e.swayPhase * 1.5) * 0.4;
-            e.x += (dirX * 0.4 + wander) * speedModifier * adultModifier * enemySlow;
+            const wander = Math.cos(e.swayPhase * 1.5) * 0.35;
+            e.x += (dirX * 0.35 + wander) * speedModifier * adultModifier * enemySlow;
           }
 
-          // 突變病毒與電路爬蟲額外帶有抽搐顫動（Micro-jitter）
           if (e.type === 'bug' || e.type === 'virus') {
-            e.x += (Math.random() - 0.5) * 0.7 * speedModifier;
+            e.x += (Math.random() - 0.5) * 0.6 * speedModifier;
           }
         }
 
-        // 確保怪物不脫離左右邊界
         e.x = Math.max(e.size + 4, Math.min(canvas.width - e.size - 4, e.x));
 
         if (e.y + e.size >= canvas.height - 35) {
@@ -1822,9 +1990,7 @@
 
         for (let j = gameState.enemies.length - 1; j >= 0; j--) {
           const e = gameState.enemies[j];
-          if (e.hp <= 0) {
-            killEnemy(e, j);
-          }
+          if (e.hp <= 0) killEnemy(e, j);
         }
       }
 
@@ -1851,11 +2017,11 @@
       if (e.type === 'mitosis') {
         addFloatingText('MITOSIS!', e.x, e.y, '#2dd4bf', 14);
         spawnEnemy({
-          type: 'bug', name: '分裂幼蟲', color: '#2dd4bf', size: 7, baseHp: 25, speed: 0.70, gold: 6, score: 25
-        }, e.x - 16, e.y);
+          type: 'bug', name: '分裂幼蟲', color: '#2dd4bf', size: 5.5, baseHp: 25, speed: 0.42, gold: 6, score: 25
+        }, e.x - 14, e.y);
         spawnEnemy({
-          type: 'bug', name: '分裂幼蟲', color: '#2dd4bf', size: 7, baseHp: 25, speed: 0.70, gold: 6, score: 25
-        }, e.x + 16, e.y);
+          type: 'bug', name: '分裂幼蟲', color: '#2dd4bf', size: 5.5, baseHp: 25, speed: 0.42, gold: 6, score: 25
+        }, e.x + 14, e.y);
       }
 
       if (e.isBoss) {
@@ -1894,7 +2060,7 @@
         ctx.translate((Math.random() - 0.5) * magnitude, (Math.random() - 0.5) * magnitude);
       }
 
-      // B300 製作防偽浮水印（手機縱向專用）
+      // B300 製作防偽浮水印（中央賽博龐克微透標記）
       ctx.save();
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(-Math.PI / 8);
@@ -1987,17 +2153,17 @@
           ctx.strokeStyle = '#38bdf8';
           ctx.lineWidth = 2.5;
           ctx.beginPath();
-          ctx.arc(0, -e.size * 0.9, 4, 0, Math.PI * 2);
+          ctx.arc(0, -e.size * 0.9, 3.5, 0, Math.PI * 2);
           ctx.stroke();
           ctx.beginPath();
           ctx.moveTo(0, -e.size * 0.5);
           ctx.lineTo(0, e.size * 0.5);
-          const legSwing = Math.sin(Date.now() / 80) * 8;
-          ctx.lineTo(-6, e.size * 1.2 + legSwing);
+          const legSwing = Math.sin(Date.now() / 80) * 6;
+          ctx.lineTo(-5, e.size * 1.2 + legSwing);
           ctx.moveTo(0, e.size * 0.5);
-          ctx.lineTo(6, e.size * 1.2 - legSwing);
-          ctx.moveTo(-8, -e.size * 0.1);
-          ctx.lineTo(8, -e.size * 0.1);
+          ctx.lineTo(5, e.size * 1.2 - legSwing);
+          ctx.moveTo(-6, -e.size * 0.1);
+          ctx.lineTo(6, -e.size * 0.1);
           ctx.stroke();
         } else if (e.type === 'oldman') {
           ctx.rotate(Math.sin(Date.now() / 300) * 0.05);
@@ -2013,14 +2179,14 @@
         } else if (e.type === 'jelly') {
           ctx.fillStyle = 'rgba(129, 140, 248, 0.8)';
           ctx.beginPath();
-          ctx.arc(0, -4, e.size, Math.PI, 0);
+          ctx.arc(0, -3, e.size, Math.PI, 0);
           ctx.fill();
           ctx.strokeStyle = '#818cf8';
           ctx.lineWidth = 1.5;
-          for (let t = -e.size + 3; t <= e.size - 3; t += 6) {
+          for (let t = -e.size + 3; t <= e.size - 3; t += 5) {
             ctx.beginPath();
-            ctx.moveTo(t, -4);
-            ctx.quadraticCurveTo(t + Math.sin(Date.now() / 150 + t) * 5, e.size * 0.6, t, e.size * 1.2);
+            ctx.moveTo(t, -3);
+            ctx.quadraticCurveTo(t + Math.sin(Date.now() / 150 + t) * 4, e.size * 0.6, t, e.size * 1.2);
             ctx.stroke();
           }
         } else if (e.type === 'mitosis') {
@@ -2034,7 +2200,7 @@
           ctx.arc(0, 0, e.size, 0, Math.PI * 2);
           ctx.fill();
           for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-            ctx.fillRect(Math.cos(a) * (e.size - 2), Math.sin(a) * (e.size - 2), 5, 5);
+            ctx.fillRect(Math.cos(a) * (e.size - 2), Math.sin(a) * (e.size - 2), 4, 4);
           }
         } else if (e.type === 'bug') {
           ctx.rotate(e.angle);
@@ -2060,7 +2226,7 @@
         } else {
           ctx.rotate(e.angle);
           ctx.strokeStyle = '#f43f5e';
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 3.5;
           ctx.beginPath();
           ctx.arc(0, 0, e.size, 0, Math.PI * 2);
           ctx.stroke();
@@ -2070,16 +2236,16 @@
           ctx.fill();
           ctx.fillStyle = '#fde047';
           ctx.beginPath();
-          ctx.arc(0, 0, 8, 0, Math.PI * 2);
+          ctx.arc(0, 0, 7, 0, Math.PI * 2);
           ctx.fill();
         }
 
         ctx.restore();
 
         const barW = e.size * (e.isBoss ? 2.5 : 1.8);
-        const barH = e.isBoss ? 6 : 3.5;
+        const barH = e.isBoss ? 5 : 3;
         const barX = e.x - barW / 2;
-        const barY = e.y - e.size - (e.isBoss ? 14 : 8);
+        const barY = e.y - e.size - (e.isBoss ? 12 : 7);
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
         ctx.fillRect(barX, barY, barW, barH);
         const hpPercent = Math.max(0, e.hp / e.maxHp);
@@ -2098,14 +2264,14 @@
       ctx.shadowColor = currentWepColor;
       ctx.shadowBlur = 12;
       ctx.beginPath();
-      ctx.arc(playerX, playerY, 24, Math.PI, 0);
+      ctx.arc(playerX, playerY, 22, Math.PI, 0);
       ctx.fill();
       ctx.stroke();
 
-      ctx.font = '20px Inter, sans-serif';
+      ctx.font = '18px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('🧠', playerX, playerY - 6);
+      ctx.fillText('🧠', playerX, playerY - 5);
       ctx.restore();
 
       for (const pt of gameState.particles) {
@@ -2288,9 +2454,9 @@
       Object.keys(opButtons).forEach(op => {
         const btn = opButtons[op];
         if (gameState.activeOperations.has(op)) {
-          btn.className = 'px-2 py-1.5 rounded text-xs font-bold font-math transition bg-cyan-600 text-white shadow-sm border border-cyan-400';
+          btn.className = 'px-2 py-1 rounded text-xs font-bold font-math transition bg-cyan-600 text-white shadow-sm border border-cyan-400';
         } else {
-          btn.className = 'px-2 py-1.5 rounded text-xs font-bold font-math transition bg-slate-800/80 text-slate-400 border border-slate-700';
+          btn.className = 'px-2 py-1 rounded text-xs font-bold font-math transition bg-slate-800/80 text-slate-400 border border-slate-700';
         }
       });
     }
@@ -2353,7 +2519,7 @@
         card.innerHTML = `
           <div>
             <div class="flex items-center justify-between mb-1">
-              <span class="font-hud font-bold text-sm flex items-center gap-1.5" style="color: ${w.color}">
+              <span class="font-hud font-bold text-xs sm:text-sm flex items-center gap-1.5" style="color: ${w.color}">
                 <span>${w.icon}</span> ${w.name}
               </span>
             </div>
@@ -2399,6 +2565,7 @@
       gameState.isPaused = false;
     });
 
+    // 鍵盤按鍵事件綁定 (含所有數字、刪除與發射)
     document.querySelectorAll('.keypad-btn[data-val]').forEach(btn => {
       const clickHandler = (e) => {
         e.preventDefault();
@@ -2430,9 +2597,32 @@
       fireActionBtn.addEventListener('touchstart', fireHandler, { passive: false });
     }
 
-    function startGame() {
+    if (mobileBackspaceBtn) {
+      const mbsHandler = (e) => {
+        e.preventDefault();
+        sound.init();
+        handleBackspace();
+      };
+      mobileBackspaceBtn.addEventListener('click', mbsHandler);
+      mobileBackspaceBtn.addEventListener('touchstart', mbsHandler, { passive: false });
+    }
+
+    if (mobileFireBtn) {
+      const mfireHandler = (e) => {
+        e.preventDefault();
+        sound.init();
+        submitAnswer();
+      };
+      mobileFireBtn.addEventListener('click', mfireHandler);
+      mobileFireBtn.addEventListener('touchstart', mfireHandler, { passive: false });
+    }
+
+    function startGame(preferredMode = null) {
+      if (preferredMode) {
+        setLayoutMode(preferredMode);
+      }
       sound.unlockMobileAudio();
-      enterFullscreenSafe(); // 點擊啟動直接觸發全螢幕模式
+      enterFullscreenSafe();
       loadSavedMeta();
       bgm.play();
       bgm.setTension(gameState.adultMode);
@@ -2479,6 +2669,9 @@
       gameState.isRunning = false;
       sound.playError();
       bgm.stop();
+      if (voiceManager && voiceManager.isEnabled && voiceManager.recognition) {
+        try { voiceManager.recognition.stop(); } catch(e) {}
+      }
       gameBody.classList.remove('bullet-time-active');
 
       const earnedSynapse = Math.floor(gameState.wave * 3 + gameState.kills * 0.5);
@@ -2498,16 +2691,20 @@
       overlayTitle.classList.remove('text-cyan-300');
       overlayTitle.classList.add('text-rose-500');
       overlayDesc.textContent = `戰役結束！本次推演獲得了 ${earnedSynapse} 點神經突觸點數，可用於強化科技樹！`;
-      startGameBtn.textContent = '再次重啟 (RETRY)';
 
       gameOverStats.classList.remove('hidden');
       overlayScreen.classList.remove('hidden');
       updateStatsUI();
     }
 
-    startGameBtn.addEventListener('click', startGame);
+    if (startMobileBtn) {
+      startMobileBtn.addEventListener('click', () => startGame('mobile'));
+    }
+    if (startDesktopBtn) {
+      startDesktopBtn.addEventListener('click', () => startGame('desktop'));
+    }
 
-    // 手機 Chrome / Safari 首次點擊全域喚醒音訊
+    // 手機/全域首次觸摸音訊解鎖防護
     function setupMobileAudioUnlock() {
       const unlockEvents = ['touchstart', 'touchend', 'click'];
       const unlockHandler = () => {
@@ -2528,6 +2725,15 @@
       updateWeaponUI();
       updateStatsUI();
       generateQuestion();
+
+      // 智慧預檢測裝置比例
+      const isNarrowMobile = window.innerWidth <= 640 || window.innerHeight > window.innerWidth * 1.4;
+      if (isNarrowMobile) {
+        setLayoutMode('mobile');
+      } else {
+        setLayoutMode('desktop');
+      }
+
       gameLoop();
     };
   </script>
